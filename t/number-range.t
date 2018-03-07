@@ -1,6 +1,28 @@
 use OpenAPI::Schema::Validate;
 use Test;
 
+use OpenAPI::Schema::Validate;
+use Test;
+
+throws-like
+    { OpenAPI::Schema::Validate.new(schema => { minimum => 'string' }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having minimum property be a non-integer is refused (Str)';
+throws-like
+    { OpenAPI::Schema::Validate.new(schema => { exclusiveMinimum => 'string' }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having exclusiveMinimum property be an non-Bool is refused (Str)';
+
+throws-like
+    { OpenAPI::Schema::Validate.new(schema => { maximum => 'string' }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having maximum property be a non-integer is refused (Str)';
+throws-like
+    { OpenAPI::Schema::Validate.new(schema => { exclusiveMaximum => 'string' }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having exclusiveMaximum property be an non-Bool is refused (Str)';
+
+
 {
     my $schema = OpenAPI::Schema::Validate.new(schema => {
         type => 'integer',
