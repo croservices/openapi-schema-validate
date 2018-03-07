@@ -24,7 +24,6 @@ throws-like
         type => 'number'
     });
     ok $schema.validate(42.0), 'Simple number validation accepts a Rat';
-    nok $schema.validate(42), 'Simple number validation rejects an integer';
     nok $schema.validate('hello'), 'Simple number validation rejects a string';
     nok $schema.validate(Any), 'Simple number validation rejects a type object';
 }

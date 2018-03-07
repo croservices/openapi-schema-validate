@@ -48,7 +48,7 @@ class OpenAPI::Schema::Validate {
 
     my class NumberCheck does Check {
         method check($value --> Nil) {
-            unless $value ~~ Rat && $value.defined {
+            unless $value ~~ Real && $value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason('Not a number');
             }
@@ -123,6 +123,20 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class MaximumCheck does Check {
+        has Int $.max;
+        has Bool $.exclusive;
+        method check($value --> Nil) {
+            # say $value;
+            # say $!exclusive;
+            # say $!max;
+            unless $value ~~ Int && $!exclusive && $value < $!max || !$!exclusive && $value <= $!max {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Number is less than $!max");
+            }
+        }
+    }
+
     has Check $!check;
 
     submethod BUILD(:%schema! --> Nil) {
@@ -170,6 +184,17 @@ class OpenAPI::Schema::Validate {
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The multipleOf property must be a non-negative integer");
+            }
+        }
+
+        with %schema<maximum> {
+            when Int {
+                push @checks, MaximumCheck.new(:$path, max => $_,
+                    exclusive => %schema<exclusiveMaximum> // False);
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                :$path, :reason("The maximum property must be an integer");
             }
         }
 
