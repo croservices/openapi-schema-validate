@@ -46,6 +46,51 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class NumberCheck does Check {
+        method check($value --> Nil) {
+            unless $value ~~ Rat && $value.defined {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason('Not a number');
+            }
+        }
+    }
+
+    my class IntegerCheck does Check {
+        method check($value --> Nil) {
+            unless $value ~~ Int && $value.defined {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason('Not an integer');
+            }
+        }
+    }
+
+    my class BooleanCheck does Check {
+        method check($value --> Nil) {
+            unless $value ~~ Bool && $value.defined {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason('Not a boolean');
+            }
+        }
+    }
+
+    my class ArrayCheck does Check {
+        method check($value --> Nil) {
+            unless $value ~~ Positional && $value.defined {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason('Not an array');
+            }
+        }
+    }
+
+    my class ObjectCheck does Check {
+        method check($value --> Nil) {
+            unless $value ~~ Associative && $value.defined {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason('Not an object');
+            }
+        }
+    }
+
     my class MinLengthCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
@@ -79,6 +124,21 @@ class OpenAPI::Schema::Validate {
             when Str {
                 when 'string' {
                     push @checks, StringCheck.new(:$path);
+                }
+                when 'number' {
+                    push @checks, NumberCheck.new(:$path);
+                }
+                when 'integer' {
+                    push @checks, IntegerCheck.new(:$path);
+                }
+                when 'boolean' {
+                    push @checks, BooleanCheck.new(:$path);
+                }
+                when 'array' {
+                    push @checks, ArrayCheck.new(:$path);
+                }
+                when 'object' {
+                    push @checks, ObjectCheck.new(:$path);
                 }
                 default {
                     die X::OpenAPI::Schema::Validate::BadSchema.new:

@@ -19,4 +19,51 @@ throws-like
     nok $schema.validate(Any), 'Simple string validation rejects a type object';
 }
 
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'number'
+    });
+    ok $schema.validate(42.0), 'Simple number validation accepts a Rat';
+    nok $schema.validate(42), 'Simple number validation rejects an integer';
+    nok $schema.validate('hello'), 'Simple number validation rejects a string';
+    nok $schema.validate(Any), 'Simple number validation rejects a type object';
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'integer'
+    });
+    ok $schema.validate(42), 'Simple integer validation accepts an integer';
+    nok $schema.validate(42.0), 'Simple integer validation rejects a Rat';
+    nok $schema.validate('hello'), 'Simple integer validation rejects a string';
+    nok $schema.validate(Any), 'Simple integer validation rejects a type object';
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'boolean'
+    });
+    ok $schema.validate(True), 'Simple boolean validation accepts an boolean';
+    nok $schema.validate('hello'), 'Simple boolean validation rejects a string';
+    nok $schema.validate(Any), 'Simple boolean validation rejects a type object';
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'array'
+    });
+    ok $schema.validate([42]), 'Simple array validation accepts a Positional';
+    nok $schema.validate('hello'), 'Simple array validation rejects a string';
+    nok $schema.validate(Any), 'Simple array validation rejects a type object';
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'object'
+    });
+    ok $schema.validate({foo => 'bar'}), 'Simple object validation accepts a Hash';
+    nok $schema.validate('hello'), 'Simple object validation rejects a string';
+    nok $schema.validate(Any), 'Simple object validation rejects a type object';
+}
+
 done-testing;
