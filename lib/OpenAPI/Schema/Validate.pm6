@@ -165,6 +165,15 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class UniqueItemsCheck does Check {
+        method check($value --> Nil) {
+            if $value.elems != $value.unique(with => &[eqv]).elems {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Array has duplicated values");
+            }
+        }
+    }
+
     my class MinPropertiesCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
@@ -321,6 +330,16 @@ class OpenAPI::Schema::Validate {
             }
         }
 
+        with %schema<uniqueItems> {
+            if $_ ~~ Bool && $_ eq True {
+                push @checks, UniqueItemsCheck.new(:$path);
+            } elsif $_ ~~ Bool && $_ eq False {
+            } else {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The uniqueItems property must be a boolean");
+            }
+        }
+
         with %schema<minProperties> {
             when UInt {
                 push @checks, MinPropertiesCheck.new(:$path, :min($_));
@@ -342,7 +361,7 @@ class OpenAPI::Schema::Validate {
         }
 
         with %schema<required> {
-            when Positional && [&&] $_.map(* ~~ Str) && $_.elems == $_.unique.elems {
+            when Positional && [&&] .map(* ~~ Str) && .elems == .unique.elems {
                 push @checks, RequiredCheck.new(:$path, prop => @$_);
             }
             default {
