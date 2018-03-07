@@ -331,10 +331,11 @@ class OpenAPI::Schema::Validate {
         }
 
         with %schema<uniqueItems> {
-            if $_ ~~ Bool && $_ eq True {
+            when $_ === True {
                 push @checks, UniqueItemsCheck.new(:$path);
-            } elsif $_ ~~ Bool && $_ eq False {
-            } else {
+            }
+            when  $_ === False {}
+            default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The uniqueItems property must be a boolean");
             }
