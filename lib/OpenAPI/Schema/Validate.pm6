@@ -91,6 +91,18 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class MultipleOfCheck does Check {
+        has UInt $.multi;
+        method check($value --> Nil) {
+            if $value !~~ UInt || !$value.defined {
+                die X::OpenAPI::Schema::Validate::Failed.new(:$!path, :reason('Value must be a positive integer'));
+            }
+            unless $value %% $!multi {
+                die X::OpenAPI::Schema::Validate::Failed.new(:$!path, :reason("Integer is not multiple of $!multi"));
+            }
+        }
+    }
+
     my class MinLengthCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
@@ -151,23 +163,33 @@ class OpenAPI::Schema::Validate {
             }
         }
 
+        with %schema<multipleOf> {
+            when UInt {
+                push @checks, MultipleOfCheck.new(:$path, multi => $_);
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The multipleOf property must be a non-negative integer");
+            }
+        }
+
         with %schema<minLength> {
-            when Int {
+            when UInt {
                 push @checks, MinLengthCheck.new(:$path, :min($_));
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
-                    :$path, :reason("The minLength property must be an integer");
+                    :$path, :reason("The minLength property must be a non-negative integer");
             }
         }
 
         with %schema<maxLength> {
-            when Int {
+            when UInt {
                 push @checks, MaxLengthCheck.new(:$path, :max($_));
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
-                    :$path, :reason("The maxLength property must be an integer");
+                    :$path, :reason("The maxLength property must be a non-negative integer");
             }
         }
 
