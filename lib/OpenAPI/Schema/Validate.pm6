@@ -145,6 +145,26 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class MinItemsCheck does Check {
+        has Int $.min;
+        method check($value --> Nil) {
+            if $value ~~ Positional && $value.elems < $!min {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Array has less than $!min elements");
+            }
+        }
+    }
+
+    my class MaxItemsCheck does Check {
+        has Int $.max;
+        method check($value --> Nil) {
+            if $value ~~ Positional && $value.elems > $!max {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Array has less than $!max elements");
+            }
+        }
+    }
+
     has Check $!check;
 
     submethod BUILD(:%schema! --> Nil) {
@@ -248,6 +268,26 @@ class OpenAPI::Schema::Validate {
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The maxLength property must be a non-negative integer");
+            }
+        }
+
+        with %schema<minItems> {
+            when UInt {
+                push @checks, MinItemsCheck.new(:$path, :min($_));
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The minItems property must be a non-negative integer");
+            }
+        }
+
+        with %schema<maxItems> {
+            when UInt {
+                push @checks, MaxItemsCheck.new(:$path, :max($_));
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The maxItems property must be a non-negative integer");
             }
         }
 
