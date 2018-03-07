@@ -127,9 +127,6 @@ class OpenAPI::Schema::Validate {
         has Int $.max;
         has Bool $.exclusive;
         method check($value --> Nil) {
-            # say $value;
-            # say $!exclusive;
-            # say $!max;
             unless $value ~~ Int && $!exclusive && $value < $!max || !$!exclusive && $value <= $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Number is less than $!max");
