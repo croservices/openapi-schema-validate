@@ -342,12 +342,12 @@ class OpenAPI::Schema::Validate {
         }
 
         with %schema<required> {
-            when Positional && [&&] $_.map(* ~~ Str) {
+            when Positional && [&&] $_.map(* ~~ Str) && $_.elems == $_.unique.elems {
                 push @checks, RequiredCheck.new(:$path, prop => @$_);
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
-                    :$path, :reason("The required property must be a Positional of Str");
+                    :$path, :reason("The required property must be a Positional of unique Str");
             }
         }
 
