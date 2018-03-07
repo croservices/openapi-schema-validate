@@ -21,6 +21,13 @@ throws-like
     ok $schema.validate({a => 1, b => 2, c => 3, d => 4}), 'Object of maximum properties number accepted';
     nok $schema.validate({a => 1, b => 2, c => 3, d => 4, e => 5}), 'Object over maximum properties number rejected';
     nok $schema.validate('string'), 'String instead of array rejected';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'object',
+        required => <a b>
+    });
+    nok $schema.validate({a => 1}), 'Object without required attribute rejected';
+    ok $schema.validate({a => 1, b => 2}), 'Object with all required attributes accepted';
+    ok $schema.validate({a => 1, b => 2, c => 3}), 'Object that has additional attributes besides required accepted';
 }
 
 done-testing;

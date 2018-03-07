@@ -106,7 +106,7 @@ class OpenAPI::Schema::Validate {
     my class MinLengthCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
-            if $value ~~ Str && $value.defined && $value.codes < $!min {
+            if $value.defined && $value.codes < $!min {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("String less than $!min codepoints");
             }
@@ -116,7 +116,7 @@ class OpenAPI::Schema::Validate {
     my class MaxLengthCheck does Check {
         has Int $.max;
         method check($value --> Nil) {
-            if $value ~~ Str && $value.defined && $value.codes > $!max {
+            if $value.defined && $value.codes > $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("String more than $!max codepoints");
             }
@@ -127,7 +127,7 @@ class OpenAPI::Schema::Validate {
         has Int $.max;
         has Bool $.exclusive;
         method check($value --> Nil) {
-            unless $value ~~ Int && $!exclusive && $value < $!max || !$!exclusive && $value <= $!max {
+            unless $!exclusive && $value < $!max || !$!exclusive && $value <= $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Number is less than $!max");
             }
@@ -138,7 +138,7 @@ class OpenAPI::Schema::Validate {
         has Int $.min;
         has Bool $.exclusive;
         method check($value --> Nil) {
-            unless $value ~~ Int && $!exclusive && $value > $!min || !$!exclusive && $value >= $!min {
+            unless $!exclusive && $value > $!min || !$!exclusive && $value >= $!min {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Number is more than $!min");
             }
@@ -148,7 +148,7 @@ class OpenAPI::Schema::Validate {
     my class MinItemsCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
-            if $value ~~ Positional && $value.elems < $!min {
+            if $value.elems < $!min {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Array has less than $!min elements");
             }
@@ -158,7 +158,7 @@ class OpenAPI::Schema::Validate {
     my class MaxItemsCheck does Check {
         has Int $.max;
         method check($value --> Nil) {
-            if $value ~~ Positional && $value.elems > $!max {
+            if $value.elems > $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Array has less than $!max elements");
             }
@@ -168,7 +168,7 @@ class OpenAPI::Schema::Validate {
     my class MinPropertiesCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
-            if $value ~~ Associative && $value.values < $!min {
+            if $value.values < $!min {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Object has less than $!min properties");
             }
@@ -178,9 +178,19 @@ class OpenAPI::Schema::Validate {
     my class MaxPropertiesCheck does Check {
         has Int $.max;
         method check($value --> Nil) {
-            if $value ~~ Associative && $value.values > $!max {
+            if $value.values > $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Object has more than $!max properties");
+            }
+        }
+    }
+
+    my class RequiredCheck does Check {
+        has Str @.prop;
+        method check($value --> Nil) {
+            unless [&&] $value{@!prop}.map(*.defined) {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Object does not have required property");
             }
         }
     }
@@ -328,6 +338,16 @@ class OpenAPI::Schema::Validate {
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The maxProperties property must be a non-negative integer");
+            }
+        }
+
+        with %schema<required> {
+            when Positional && [&&] $_.map(* ~~ Str) {
+                push @checks, RequiredCheck.new(:$path, prop => @$_);
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The required property must be a Positional of Str");
             }
         }
 
