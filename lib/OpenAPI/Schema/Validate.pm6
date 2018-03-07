@@ -94,10 +94,10 @@ class OpenAPI::Schema::Validate {
     my class MultipleOfCheck does Check {
         has UInt $.multi;
         method check($value --> Nil) {
-            if $value !~~ UInt || !$value.defined {
+            if $value ~~ UInt && !$value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new(:$!path, :reason('Value must be a positive integer'));
             }
-            unless $value %% $!multi {
+            unless $value ~~ UInt && $value %% $!multi {
                 die X::OpenAPI::Schema::Validate::Failed.new(:$!path, :reason("Integer is not multiple of $!multi"));
             }
         }
@@ -106,7 +106,7 @@ class OpenAPI::Schema::Validate {
     my class MinLengthCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
-            if $value.defined && $value.codes < $!min {
+            if $value ~~ Str && $value.defined && $value.codes < $!min {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("String less than $!min codepoints");
             }
@@ -116,7 +116,7 @@ class OpenAPI::Schema::Validate {
     my class MaxLengthCheck does Check {
         has Int $.max;
         method check($value --> Nil) {
-            if $value.defined && $value.codes > $!max {
+            if $value ~~ Str && $value.defined && $value.codes > $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("String more than $!max codepoints");
             }
@@ -127,9 +127,9 @@ class OpenAPI::Schema::Validate {
         has Int $.max;
         has Bool $.exclusive;
         method check($value --> Nil) {
-            unless $!exclusive && $value < $!max || !$!exclusive && $value <= $!max {
+            if $value ~~ Real && (!$!exclusive && $value > $!max || $!exclusive && $value >= $!max) {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason("Number is less than $!max");
+                    :$!path, :reason("Number is more than $!max");
             }
         }
     }
@@ -138,9 +138,9 @@ class OpenAPI::Schema::Validate {
         has Int $.min;
         has Bool $.exclusive;
         method check($value --> Nil) {
-            unless $!exclusive && $value > $!min || !$!exclusive && $value >= $!min {
+            if $value ~~ Real && (!$!exclusive && $value < $!min || $!exclusive && $value <= $!min) {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason("Number is more than $!min");
+                    :$!path, :reason("Number is less than $!min");
             }
         }
     }
@@ -148,7 +148,7 @@ class OpenAPI::Schema::Validate {
     my class MinItemsCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
-            if $value.elems < $!min {
+            if $value ~~ Positional && $value.elems < $!min {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Array has less than $!min elements");
             }
@@ -158,7 +158,7 @@ class OpenAPI::Schema::Validate {
     my class MaxItemsCheck does Check {
         has Int $.max;
         method check($value --> Nil) {
-            if $value.elems > $!max {
+            if $value ~~ Positional && $value.elems > $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Array has less than $!max elements");
             }
@@ -167,7 +167,7 @@ class OpenAPI::Schema::Validate {
 
     my class UniqueItemsCheck does Check {
         method check($value --> Nil) {
-            if $value.elems != $value.unique(with => &[eqv]).elems {
+            if $value ~~ Positional && $value.elems != $value.unique(with => &[eqv]).elems {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Array has duplicated values");
             }
@@ -177,7 +177,7 @@ class OpenAPI::Schema::Validate {
     my class MinPropertiesCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
-            if $value.values < $!min {
+            if $value ~~ Associative && $value.values < $!min {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Object has less than $!min properties");
             }
@@ -187,7 +187,7 @@ class OpenAPI::Schema::Validate {
     my class MaxPropertiesCheck does Check {
         has Int $.max;
         method check($value --> Nil) {
-            if $value.values > $!max {
+            if $value ~~ Associative && $value.values > $!max {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Object has more than $!max properties");
             }
@@ -197,7 +197,7 @@ class OpenAPI::Schema::Validate {
     my class RequiredCheck does Check {
         has Str @.prop;
         method check($value --> Nil) {
-            unless [&&] $value{@!prop}.map(*.defined) {
+            if $value ~~ Associative && not so [&&] $value{@!prop}.map(*.defined) {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Object does not have required property");
             }
