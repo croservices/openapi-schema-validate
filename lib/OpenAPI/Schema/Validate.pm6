@@ -165,6 +165,26 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class MinPropertiesCheck does Check {
+        has Int $.min;
+        method check($value --> Nil) {
+            if $value ~~ Associative && $value.values < $!min {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Object has less than $!min properties");
+            }
+        }
+    }
+
+    my class MaxPropertiesCheck does Check {
+        has Int $.max;
+        method check($value --> Nil) {
+            if $value ~~ Associative && $value.values > $!max {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Object has more than $!max properties");
+            }
+        }
+    }
+
     has Check $!check;
 
     submethod BUILD(:%schema! --> Nil) {
@@ -288,6 +308,26 @@ class OpenAPI::Schema::Validate {
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The maxItems property must be a non-negative integer");
+            }
+        }
+
+        with %schema<minProperties> {
+            when UInt {
+                push @checks, MinPropertiesCheck.new(:$path, :min($_));
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The minProperties property must be a non-negative integer");
+            }
+        }
+
+        with %schema<maxProperties> {
+            when UInt {
+                push @checks, MaxPropertiesCheck.new(:$path, :max($_));
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The maxProperties property must be a non-negative integer");
             }
         }
 
