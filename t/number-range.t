@@ -26,5 +26,20 @@ use Test;
     nok $schema.validate('string'), 'string is rejected';
 }
 
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'number',
+        minimum => 5
+    });
+    nok $schema.validate(1), '1 is less than 5';
+    ok $schema.validate(5), '5 is accepted as exclusive is set to False by default';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'number',
+        minimum => 5,
+        exclusiveMinimum => True
+    });
+    nok $schema.validate(5), '5 is rejected as exclusiveMinimum is set';
+    nok $schema.validate('string'), 'string is rejected';
+}
 
 done-testing;

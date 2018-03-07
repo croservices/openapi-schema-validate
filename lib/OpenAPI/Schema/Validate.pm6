@@ -134,6 +134,17 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class MinimumCheck does Check {
+        has Int $.min;
+        has Bool $.exclusive;
+        method check($value --> Nil) {
+            unless $value ~~ Int && $!exclusive && $value > $!min || !$!exclusive && $value >= $!min {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Number is more than $!min");
+            }
+        }
+    }
+
     has Check $!check;
 
     submethod BUILD(:%schema! --> Nil) {
@@ -191,7 +202,32 @@ class OpenAPI::Schema::Validate {
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
-                :$path, :reason("The maximum property must be an integer");
+                    :$path, :reason("The maximum property must be an integer");
+            }
+        }
+
+        with %schema<exclusiveMaximum> {
+            when $_ !~~ Bool {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                     :$path, :reason("The exclusiveMaximum property must be a boolean");
+            }
+        }
+
+        with %schema<minimum> {
+            when Int {
+                push @checks, MinimumCheck.new(:$path, min => $_,
+                    exclusive => %schema<exclusiveMinimum> // False);
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                     :$path, :reason("The minimum property must be an integer");
+            }
+        }
+
+        with %schema<exclusiveMinimum> {
+            when $_ !~~ Bool {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                     :$path, :reason("The exclusiveMinimum property must be a boolean");
             }
         }
 
