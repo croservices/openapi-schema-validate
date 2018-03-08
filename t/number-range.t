@@ -1,9 +1,6 @@
 use OpenAPI::Schema::Validate;
 use Test;
 
-use OpenAPI::Schema::Validate;
-use Test;
-
 throws-like
     { OpenAPI::Schema::Validate.new(schema => { minimum => 'string' }) },
     X::OpenAPI::Schema::Validate::BadSchema,
