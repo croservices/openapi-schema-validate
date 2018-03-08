@@ -399,7 +399,7 @@ class OpenAPI::Schema::Validate {
         has Check %.props;
         has $.add;
         method check($value --> Nil) {
-            if $value ~~ Associative {
+            if $value ~~ Associative && $value.defined {
                 if $!add === True {
                     for (%!props.keys (&) $value.keys).keys -> $key {
                         %!props{$key}.check($value{$key});
@@ -429,7 +429,7 @@ class OpenAPI::Schema::Validate {
     my class EnumCheck does Check {
         has $.enum;
         method check($value --> Nil) {
-            unless $value (elem) $!enum {
+            unless $value.defined && $value (elem) $!enum {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Value is outside of enumeration set by enum property");
             }
