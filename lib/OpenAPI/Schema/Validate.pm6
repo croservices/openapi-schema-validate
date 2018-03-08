@@ -13,6 +13,8 @@ class X::OpenAPI::Schema::Validate::Failed is Exception {
     }
 }
 
+my subset StrictPositiveInt of Int where * > 0;
+
 class OpenAPI::Schema::Validate {
     # We'll turn a schema into a tree of Check objects that enforce the
     # various bits of validation.
@@ -245,7 +247,7 @@ class OpenAPI::Schema::Validate {
         }
 
         with %schema<multipleOf> {
-            when UInt {
+            when StrictPositiveInt {
                 push @checks, MultipleOfCheck.new(:$path, multi => $_);
             }
             default {

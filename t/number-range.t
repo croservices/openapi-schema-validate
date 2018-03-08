@@ -2,6 +2,19 @@ use OpenAPI::Schema::Validate;
 use Test;
 
 throws-like
+    { OpenAPI::Schema::Validate.new(schema => { multipleOf => 'string' }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having multipleOf property be a non-integer is refused (Str)';
+throws-like
+    { OpenAPI::Schema::Validate.new(schema => { multipleOf => 0 }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having multipleOf property be 0 is refused';
+throws-like
+    { OpenAPI::Schema::Validate.new(schema => { multipleOf => -20 }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having multipleOf property be negative is refused';
+
+throws-like
     { OpenAPI::Schema::Validate.new(schema => { minimum => 'string' }) },
     X::OpenAPI::Schema::Validate::BadSchema,
     'Having minimum property be a non-integer is refused (Str)';
