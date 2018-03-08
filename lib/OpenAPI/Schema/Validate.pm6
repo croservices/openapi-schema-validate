@@ -176,6 +176,15 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class ItemsCheck does Check {
+        has Check $.items-check;
+        method check($value --> Nil) {
+            if $value ~~ Positional {
+                $value.map({ $!items-check.check($_) });
+            }
+        }
+    }
+
     my class MinPropertiesCheck does Check {
         has Int $.min;
         method check($value --> Nil) {
@@ -230,7 +239,12 @@ class OpenAPI::Schema::Validate {
                     push @checks, BooleanCheck.new(:$path);
                 }
                 when 'array' {
-                    push @checks, ArrayCheck.new(:$path);
+                    with %schema<items> {
+                        push @checks, ArrayCheck.new(:$path);
+                    } else {
+                        die X::OpenAPI::Schema::Validate::BadSchema.new:
+                            :$path, :reason("Property items must be specified for array type");
+                    }
                 }
                 when 'object' {
                     push @checks, ObjectCheck.new(:$path);
@@ -340,6 +354,17 @@ class OpenAPI::Schema::Validate {
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The uniqueItems property must be a boolean");
+            }
+        }
+
+        with %schema<items> {
+            when Associative {
+                my $items-check = check-for($path ~ '/items', %$_);
+                push @checks, ItemsCheck.new(:$path, :$items-check);
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The items property must be an object");
             }
         }
 

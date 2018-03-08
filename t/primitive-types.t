@@ -51,7 +51,8 @@ throws-like
 
 {
     my $schema = OpenAPI::Schema::Validate.new(schema => {
-        type => 'array'
+        type => 'array',
+        items => { type => 'integer' }
     });
     ok $schema.validate([42]), 'Simple array validation accepts a Positional';
     nok $schema.validate('hello'), 'Simple array validation rejects a string';
