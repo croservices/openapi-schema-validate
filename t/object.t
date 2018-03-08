@@ -72,4 +72,18 @@ throws-like
     'additionalProperties set to False rejects other attributes';
 }
 
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'object',
+        properties => {
+            type => {
+                type => 'string',
+                enum => <tsun kuu kigai>
+            }
+        }
+    });
+    ok $schema.validate({type => 'tsun'}), 'Object with property value from enum accepted';
+    nok $schema.validate({type => 'dan'}), 'Object with custom property value rejected';
+}
+
 done-testing;

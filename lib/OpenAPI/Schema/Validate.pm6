@@ -370,6 +370,16 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class EnumCheck does Check {
+        has $.enum;
+        method check($value --> Nil) {
+            unless $value (elem) $!enum {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Value is outside of enumeration set by enum property");
+            }
+        }
+    }
+
     has Check $!check;
 
     submethod BUILD(:%schema! --> Nil) {
@@ -590,6 +600,16 @@ class OpenAPI::Schema::Validate {
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The properties property must be an object");
+            }
+        }
+
+        with %schema<enum> {
+            when Positional {
+                push @checks, EnumCheck.new(:$path, enum => $_);
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The enum property must be an array");
             }
         }
 
