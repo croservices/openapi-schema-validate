@@ -125,6 +125,21 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class PatternCheck does Check {
+        has Str $.pattern;
+        has Regex $!rx;
+        submethod TWEAK() {
+            use MONKEY-SEE-NO-EVAL;
+            $!rx = EVAL 'rx:P5/' ~ $!pattern ~ '/';
+        }
+        method check($value --> Nil) {
+            if $value ~~ Str && $value !~~ $!rx {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("String does not match /$!pattern/");
+            }
+        }
+    }
+
     my class MaximumCheck does Check {
         has Int $.max;
         has Bool $.exclusive;
@@ -212,6 +227,115 @@ class OpenAPI::Schema::Validate {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Object does not have required property");
             }
+        }
+    }
+
+    my grammar ECMA262Regex {
+        token TOP {
+            <disjunction>
+        }
+        token disjunction {
+            <alternative>* % '|'
+        }
+        token alternative {
+            <term>*
+        }
+        token term {
+            <!before $>
+            [
+            | <assertion>
+            | <atom> <quantifier>?
+            ]
+        }
+        token assertion {
+            | '^'
+            | '$'
+            | '\\' <[bB]>
+            | '(?=' <disjunction> ')'
+            | '(?!' <disjunction> ')'
+        }
+        token quantifier {
+            <quantifier-prefix> '?'?
+        }
+        token quantifier-prefix {
+            | '+'
+            | '*'
+            | '?'
+            | '{' <decimal-digits> [ ',' <decimal-digits>? ]? '}'
+        }
+        token atom {
+            | <pattern-character>
+            | '.'
+            | '\\' <atom-escape>
+            | <character-class>
+            | '(' <disjunction> ')'
+            | '(?:' <disjunction> ')'
+        }
+        token pattern-character {
+            <-[^$\\.*+?()[\]{}|]>
+        }
+        token atom-escape {
+            | <decimal-digits>
+            | <character-escape>
+            | <character-class-escape>
+        }
+        token character-escape {
+            | <control-escape>
+            | 'c' <control-letter>
+            | <hex-escape-sequence>
+            | <unicode-escape-sequence>
+            | <identity-escape>
+        }
+        token control-escape {
+            <[fnrtv]>
+        }
+        token control-letter {
+            <[A..Za..z]>
+        }
+        token hex-escape-sequence {
+            'x' <[0..9A..Fa..f]>**2
+        }
+        token unicode-escape-sequence {
+            'u' <[0..9A..Fa..f]>**4
+        }
+        token identity-escape {
+            <-ident-[\c[ZWJ]\c[ZWNJ]]>
+        }
+        token decimal-digits {
+            <[0..9]>+
+        }
+        token character-class-escape {
+            <[dDsSwW]>
+        }
+        token character-class {
+            '[' '^'? <class-ranges> ']'
+        }
+        token class-ranges {
+            <non-empty-class-ranges>?
+        }
+        token non-empty-class-ranges {
+            | <class-atom> '-' <class-atom> <class-ranges>
+            | <class-atom-no-dash> <non-empty-class-ranges-no-dash>?
+            | <class-atom>
+        }
+        token non-empty-class-ranges-no-dash {
+            | <class-atom-no-dash> '-' <class-atom> <class-ranges>
+            | <class-atom-no-dash> <non-empty-class-ranges-no-dash>
+            | <class-atom>
+        }
+        token class-atom {
+            | '-'
+            | <class-atom-no-dash>
+        }
+        token class-atom-no-dash {
+            | <-[\\\]-]>
+            | \\ <class-escape>
+        }
+        token class-escape {
+            | <decimal-digits>
+            | 'b'
+            | <character-escape>
+            | <character-class-escape>
         }
     }
 
@@ -323,6 +447,22 @@ class OpenAPI::Schema::Validate {
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
                     :$path, :reason("The maxLength property must be a non-negative integer");
+            }
+        }
+
+        with %schema<pattern> {
+            when Str {
+                if ECMA262Regex.parse($_) {
+                    push @checks, PatternCheck.new(:$path, :pattern($_));
+                }
+                else {
+                    die X::OpenAPI::Schema::Validate::BadSchema.new:
+                        :$path, :reason("The pattern property must be an ECMA 262 regex");
+                }
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The pattern property must be a string");
             }
         }
 
