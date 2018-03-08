@@ -96,11 +96,11 @@ class OpenAPI::Schema::Validate {
     my class MultipleOfCheck does Check {
         has UInt $.multi;
         method check($value --> Nil) {
-            if $value ~~ UInt && !$value.defined {
-                die X::OpenAPI::Schema::Validate::Failed.new(:$!path, :reason('Value must be a positive integer'));
-            }
-            unless $value ~~ UInt && $value %% $!multi {
-                die X::OpenAPI::Schema::Validate::Failed.new(:$!path, :reason("Integer is not multiple of $!multi"));
+            if $value ~~ Real {
+                unless $value %% $!multi {
+                    die X::OpenAPI::Schema::Validate::Failed.new:
+                        :$!path, :reason("Number is not multiple of $!multi");
+                }
             }
         }
     }
