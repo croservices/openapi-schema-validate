@@ -49,4 +49,23 @@ use Test;
     ok $schema.validate({}), 'not string accepted object';
 }
 
+{
+    throws-like { OpenAPI::Schema::Validate.new(schema => { nullable => 'yes' }) },
+        X::OpenAPI::Schema::Validate::BadSchema,
+        'Having nullable property be an non-boolean is refused (Str)';
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        nullable => True,
+        type => 'string'
+    });
+    ok $schema.validate(Str), 'Type object accepted when nullable is True';
+    ok $schema.validate('string'), 'String accepted when nullable is True';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        nullable => False,
+        type => 'string'
+    });
+    ok $schema.validate('string'), 'String accepted when nullable is False';
+    nok $schema.validate(Str), 'Type object rejected when nullable is False';
+
+}
+
 done-testing;

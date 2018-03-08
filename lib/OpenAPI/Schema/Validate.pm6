@@ -395,6 +395,14 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class NullOrCheck does Check {
+        has Check $.check;
+        method check($value --> Nil) {
+            return unless $value.defined;
+            $!check.check($value);
+        }
+    }
+
     my class PropertiesCheck does Check {
         has Check %.props;
         has $.add;
@@ -713,7 +721,19 @@ class OpenAPI::Schema::Validate {
             }
         }
 
-        return @checks == 1 ?? @checks[0] !! AllCheck.new(:@checks);
+        my $check = @checks == 1 ?? @checks[0] !! AllCheck.new(:@checks);
+        with %schema<nullable> {
+            when $_ === True {
+                return NullOrCheck.new(:$check);
+            }
+            when $_ === False {
+                return $check;
+            }
+            default {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("The nullable property must be boolean");
+            }
+        } else { return $check; }
     }
 
     method validate($value --> True) {
