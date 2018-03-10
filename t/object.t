@@ -9,6 +9,10 @@ throws-like
     { OpenAPI::Schema::Validate.new(schema => { maxProperties => '4' }) },
     X::OpenAPI::Schema::Validate::BadSchema,
     'Having maxProperties property be an non-integer is refused (Str)';
+throws-like
+    { OpenAPI::Schema::Validate.new(schema => { required => <a a> }) },
+    X::OpenAPI::Schema::Validate::BadSchema,
+    'Having required property be an non-unique list is refused';
 
 {
     my $schema = OpenAPI::Schema::Validate.new(schema => {

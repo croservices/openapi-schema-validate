@@ -33,14 +33,16 @@ class OpenAPI::Schema::Validate {
     # some duplicate type checks.
 
     my class AllCheck does Check {
+        has $.native = True;
         has @.checks;
         method check($value --> Nil) {
             for @!checks.kv -> $i, $c {
                 $c.check($value);
                 CATCH {
                     when X::OpenAPI::Schema::Validate::Failed {
+                        my $path = $!native ?? .path !! "{.path}/{$i + 1}";
                         die X::OpenAPI::Schema::Validate::Failed.new:
-                            path => "{.path}/$i", reason => .reason;
+                            :$path, reason => .reason;
                     }
                 }
             }
@@ -444,9 +446,27 @@ class OpenAPI::Schema::Validate {
         }
     }
 
+    my class ReadOnlyCheck does Check {
+        method check($value --> Nil) {
+            unless $*OSV-READ {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("readOnly check is failed");
+            }
+        }
+    }
+
+    my class WriteOnlyCheck does Check {
+        method check($value --> Nil) {
+            unless $*OSV-WRITE {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("writeOnly check is failed");
+            }
+        }
+    }
+
     has Check $!check;
 
-    submethod BUILD(:%schema! --> Nil) {
+    submethod BUILD(:%schema!, :%formats, :%add-formats --> Nil) {
         $!check = check-for('root', %schema);
     }
 
@@ -634,8 +654,12 @@ class OpenAPI::Schema::Validate {
         }
 
         with %schema<required> {
-            when Positional && [&&] .map(* ~~ Str) && .elems == .unique.elems {
-                push @checks, RequiredCheck.new(:$path, prop => @$_);
+            when Positional {
+                if ([&&] .map(* ~~ Str)) && .elems == .unique.elems {
+                    push @checks, RequiredCheck.new(:$path, prop => @$_);
+                } else {
+                    proceed;
+                }
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
@@ -680,6 +704,7 @@ class OpenAPI::Schema::Validate {
         with %schema<allOf> {
             when Positional {
                 push @checks, AllCheck.new(:path("$path/allOf"),
+                                           native => False,
                                            checks => .map({ check-for($path ~ '/allOf', $_); }));
             }
             default {
@@ -722,17 +747,11 @@ class OpenAPI::Schema::Validate {
         }
 
         with %schema<readOnly> {
-            if !$*OSV-READ && $_ {
-                die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$path, :reason("readOnly is set to for Request");
-            }
+            push @checks, ReadOnlyCheck.new(:$path) if $_;
         }
 
         with %schema<writeOnly> {
-            if !$*OSV-WRITE && $_ {
-                die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$path, :reason("readOnly is set to for Response");
-            }
+            push @checks, WriteOnlyCheck.new(:$path) if $_;
         }
 
         if %schema<readOnly> === True && %schema<writeOnly> === True {

@@ -10,7 +10,7 @@ use Test;
     });
     ok $schema.validate({ type => 'one' }), 'Object that satisfies all checks accepted';
     throws-like { $schema.validate({ typee => 'one' }) },
-    X::OpenAPI::Schema::Validate::Failed, message => /'allOf/1'/,
+    X::OpenAPI::Schema::Validate::Failed, message => /'allOf/2'/,
     'Throws when one of checks is failed in allOf';
 }
 
@@ -66,6 +66,19 @@ use Test;
     ok $schema.validate('string'), 'String accepted when nullable is False';
     nok $schema.validate(Str), 'Type object rejected when nullable is False';
 
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'object',
+        required => ['username'],
+        properties => {
+            username => { type => 'string' },
+            lastTimeOnline => { readOnly => True, type => 'string' }
+        }
+    });
+    ok $schema.validate({username => 'Zero', lastTimeOnline => 'now'}, :read), 'Property with readOnly accepted when :read';
+    nok $schema.validate({username => 'Zero', lastTimeOnline => 'now'}, :write), 'readOnly property rejected when :write';
 }
 
 done-testing;
