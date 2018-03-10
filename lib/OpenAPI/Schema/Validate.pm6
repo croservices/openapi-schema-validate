@@ -1,3 +1,7 @@
+use Cro::HTTP::DateTime;
+use Cro::Uri;
+use JSON::Pointer;
+
 class X::OpenAPI::Schema::Validate::BadSchema is Exception {
     has $.path;
     has $.reason;
@@ -16,6 +20,31 @@ class X::OpenAPI::Schema::Validate::Failed is Exception {
 my subset StrictPositiveInt of Int where * > 0;
 
 class OpenAPI::Schema::Validate {
+    has %.formats;
+    has %.add-formats;
+    my grammar ECMA262Regex {...}
+    my %DEFAULT-FORMAT =
+        date-time => {  },
+        date => { True },
+        time => { True },
+        email => { True },
+        idn-email => { True },
+        hostname => { True },
+        idn-hostname => { True },
+        ipv4 => { True },
+        ipv6 => { True },
+        uri => { Cro::Uri.parse($_); CATCH {default {return False}} },
+        uri-reference => { True },
+        iri => { True },
+        iri-reference => { True },
+        uri-template => { True },
+        json-pointer => { JSON::Pointer.parse($_); CATCH {default {return False}} },
+        relative-json-pointer => { True },
+        regex => { so ECMA262Regex.parse($_) },
+        int32 => { -2147483648 <= $_ <= 2147483647 },
+        int64 => { -9223372036854775808 <= $_ <= 9223372036854775807 },
+        binary => { $_ ~~ Blob };
+
     # We'll turn a schema into a tree of Check objects that enforce the
     # various bits of validation.
     my role Check {
@@ -98,10 +127,18 @@ class OpenAPI::Schema::Validate {
     }
 
     my class StringCheck does Check {
+        has $.is-blob;
         method check($value --> Nil) {
-            unless $value ~~ Str && $value.defined {
-                die X::OpenAPI::Schema::Validate::Failed.new:
+            if $!is-blob {
+                unless $value ~~ Blob && $value.defined {
+                    die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason('Not a binary string');
+                }
+            } else {
+                unless $value ~~ Str && $value.defined {
+                    die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason('Not a string');
+                }
             }
         }
     }
@@ -464,19 +501,31 @@ class OpenAPI::Schema::Validate {
         }
     }
 
-    has Check $!check;
-
-    submethod BUILD(:%schema!, :%formats, :%add-formats --> Nil) {
-        $!check = check-for('root', %schema);
+    my class FormatCheck does Check {
+        has $.checker;
+        has $.format-name;
+        method check($value --> Nil) {
+            unless $value ~~ $!checker {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason("Value $value does not match against $!format-name format");
+            }
+        }
     }
 
-    sub check-for($path, %schema) {
+    has Check $!check;
+
+    submethod BUILD(:%schema!, :%formats = %DEFAULT-FORMAT, :%add-formats = {} --> Nil) {
+        $!check = check-for('root', %schema, :%formats, :%add-formats);
+    }
+
+    sub check-for($path, %schema, :%formats, :%add-formats) {
         my @checks;
 
         with %schema<type> {
             when Str {
                 when 'string' {
-                    push @checks, StringCheck.new(:$path);
+                    my $is-blob = %schema<format> ?? %schema<format> eq 'binary' !! False;
+                    push @checks, StringCheck.new(:$path, :$is-blob);
                 }
                 when 'number' {
                     push @checks, NumberCheck.new(:$path);
@@ -752,6 +801,16 @@ class OpenAPI::Schema::Validate {
 
         with %schema<writeOnly> {
             push @checks, WriteOnlyCheck.new(:$path) if $_;
+        }
+
+        with %schema<format> {
+            with %formats{$_} {
+                push @checks, FormatCheck.new(:$path, checker => $_, format-name => %schema<format>)
+            }
+            else {
+                die X::OpenAPI::Schema::Validate::BadSchema.new:
+                    :$path, :reason("Used unknown format: {%schema<format>}");
+            }
         }
 
         if %schema<readOnly> === True && %schema<writeOnly> === True {
