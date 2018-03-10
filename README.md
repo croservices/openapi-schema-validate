@@ -29,3 +29,19 @@ schema definition.
             }
         }
     }
+
+## Methods
+
+### validate($value, :$read, :$write)
+
+Performs validation of the passed value. Returns `True` if the validation is
+successful, and a `Failure` if it is unsuccessful. This allows use in both a
+boolean context, or a sink context in which case the failiure will be sunk and
+an exception of type `X::OpenAPI::Schema::Validate::Failed` thrown.
+
+OpenAPI schemas may contain the `readOnly` and `writeOnly` properties. These
+are used for properties that may only show up in responses and requets
+respectively. Thus, pass `:read` when validating a response, and `:write` when
+validating a request, in order to allow the appropriate properties to pass (or
+fail) validation. If neither of `:read` and `:write` are passed then both
+`readOnly` and `writeOnly` will always fail.
