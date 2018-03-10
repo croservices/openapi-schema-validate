@@ -721,6 +721,25 @@ class OpenAPI::Schema::Validate {
             }
         }
 
+        with %schema<readOnly> {
+            if !$*OSV-READ && $_ {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$path, :reason("readOnly is set to for Request");
+            }
+        }
+
+        with %schema<writeOnly> {
+            if !$*OSV-WRITE && $_ {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$path, :reason("readOnly is set to for Response");
+            }
+        }
+
+        if %schema<readOnly> === True && %schema<writeOnly> === True {
+            die X::OpenAPI::Schema::Validate::BadSchema.new:
+                :$path, :reason("readOnly and writeOnly properties cannot be both True");
+        }
+
         my $check = @checks == 1 ?? @checks[0] !! AllCheck.new(:@checks);
         with %schema<nullable> {
             when $_ === True {
@@ -736,7 +755,7 @@ class OpenAPI::Schema::Validate {
         } else { return $check; }
     }
 
-    method validate($value --> True) {
+    method validate($value, :read($*OSV-READ) = False, :write($*OSV-WRITE) = False --> True) {
         $!check.check($value);
         CATCH {
             when X::OpenAPI::Schema::Validate::Failed {
