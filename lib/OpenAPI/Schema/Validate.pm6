@@ -24,15 +24,15 @@ class OpenAPI::Schema::Validate {
     has %.add-formats;
     my grammar ECMA262Regex {...}
     my %DEFAULT-FORMAT =
-        date-time => {  },
+        date-time => { True },
         date => { True },
         time => { True },
         email => { True },
         idn-email => { True },
         hostname => { True },
         idn-hostname => { True },
-        ipv4 => { True },
-        ipv6 => { True },
+        ipv4 => { Cro::Uri::GenericParser.parse($_, :rule('IPv4address')) },
+        ipv6 => { Cro::Uri::GenericParser.parse($_, :rule('IPv6address')) },
         uri => { Cro::Uri.parse($_); CATCH {default {return False}} },
         uri-reference => { True },
         iri => { True },
