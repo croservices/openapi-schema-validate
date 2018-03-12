@@ -31,4 +31,28 @@ throws-like
     ok $schema.validate('1080:0:0:0:8:800:200C:417A'), 'Valid IPv6 accepted';
 }
 
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'uri'
+    });
+    ok $schema.validate('foo://example.com:8042'), 'Valid URI accepted';
+    nok $schema.validate('foo'), 'Invalid URI rejected';
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'json-pointer'
+    });
+    ok $schema.validate('/foo/bar'), 'Valid JSON Pointer accepted';
+    nok $schema.validate('foo'), 'Invalid JSON Pointer rejected';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'relative-json-pointer'
+    });
+    ok $schema.validate('1/foo/bar'), 'Valid relative JSON Pointer accepted';
+    nok $schema.validate('foo'), 'Invalid relative JSON Pointer rejected';
+}
+
 done-testing;

@@ -1,6 +1,7 @@
 use Cro::HTTP::DateTime;
 use Cro::Uri;
 use JSON::Pointer;
+use JSON::Pointer::Relative;
 
 class X::OpenAPI::Schema::Validate::BadSchema is Exception {
     has $.path;
@@ -33,13 +34,13 @@ class OpenAPI::Schema::Validate {
         idn-hostname => { True },
         ipv4 => { Cro::Uri::GenericParser.parse($_, :rule('IPv4address')) },
         ipv6 => { Cro::Uri::GenericParser.parse($_, :rule('IPv6address')) },
-        uri => { Cro::Uri.parse($_); CATCH {default {return False}} },
+        uri => { CATCH {default {False}}; Cro::Uri.parse($_) },
         uri-reference => { True },
         iri => { True },
         iri-reference => { True },
         uri-template => { True },
-        json-pointer => { JSON::Pointer.parse($_); CATCH {default {return False}} },
-        relative-json-pointer => { True },
+        json-pointer => { CATCH {default {False}}; JSONPointer.parse($_) },
+        relative-json-pointer => { JSONPointerRelative.parse($_) },
         regex => { so ECMA262Regex.parse($_) },
         int32 => { -2147483648 <= $_ <= 2147483647 },
         int64 => { -9223372036854775808 <= $_ <= 9223372036854775807 },
