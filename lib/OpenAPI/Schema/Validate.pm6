@@ -1,4 +1,4 @@
-use Cro::HTTP::DateTime;
+use DateTime::Parse;
 use Cro::Uri;
 use JSON::Pointer;
 use JSON::Pointer::Relative;
@@ -25,9 +25,9 @@ class OpenAPI::Schema::Validate {
     has %.add-formats;
     my grammar ECMA262Regex {...}
     my %DEFAULT-FORMAT =
-        date-time => { True },
-        date => { True },
-        time => { True },
+        date-time => { DateTime::Parse::Grammar.parse($_, :rule('rfc3339-date')) },
+        date => { DateTime::Parse::Grammar.parse($_, :rule('date5')) },
+        time => { DateTime::Parse::Grammar.parse($_, :rule('time2')) },
         email => { True },
         idn-email => { True },
         hostname => { True },

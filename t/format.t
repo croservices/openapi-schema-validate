@@ -55,4 +55,19 @@ throws-like
     nok $schema.validate('foo'), 'Invalid relative JSON Pointer rejected';
 }
 
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'date-time'
+    });
+    ok $schema.validate('1996-12-19T16:39:57-08:00'), 'Valid datetime is accepted';
+    nok $schema.validate('Tomorrow'), 'Invalid datetime rejected';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'time'
+    });
+    ok $schema.validate('16:39:57-08:00'), 'Valid relative time accepted';
+    nok $schema.validate('half past ten'), 'Invalid relative time rejected';
+}
+
 done-testing;

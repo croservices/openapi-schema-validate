@@ -3,7 +3,7 @@
         "Jonathan Worthington <jonathan@edument.se>"
     ],
     "build-depends" : [ ],
-    "depends" : [ "Cro::Core", "JSON::Pointer" ],
+    "depends" : [ "Cro::Core", "JSON::Pointer", "DateTime::Parse" ],
     "description" : "Validate a value or data structure against an OpenAPI schema.",
     "license" : "Artistic-2.0",
     "name" : "OpenAPI::Schema::Validate",
