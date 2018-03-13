@@ -70,4 +70,17 @@ throws-like
     nok $schema.validate('half past ten'), 'Invalid relative time rejected';
 }
 
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'uri-reference'
+    });
+    ok $schema.validate('//example.org/scheme-relative/URI/with/absolute/path/to/resource.'), 'Valid URI Reference accepted';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'uri-template'
+    });
+    ok $schema.validate('http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}'), 'Valid URI Template accepted';
+}
+
 done-testing;
