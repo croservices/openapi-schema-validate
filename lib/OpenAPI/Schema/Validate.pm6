@@ -674,7 +674,7 @@ class OpenAPI::Schema::Validate {
 
         with %schema<items> {
             when Associative {
-                my $items-check = check-for($path ~ '/items', %$_);
+                my $items-check = check-for($path ~ '/items', %$_, :%formats, :%add-formats);
                 push @checks, ItemsCheck.new(:$path, :$items-check);
             }
             default {
@@ -719,13 +719,13 @@ class OpenAPI::Schema::Validate {
 
         with %schema<properties> {
             when Associative {
-                my %props = .map({ .key => check-for($path ~ "/properties/{.key}", %(.value)) });
+                my %props = .map({ .key => check-for($path ~ "/properties/{.key}", %(.value), :%formats, :%add-formats) });
                 with %schema<additionalProperties> {
                     when $_ === True|False {
                         push @checks, PropertiesCheck.new(:$path, :%props, add => $_);
                     }
                     when Associative {
-                        my $add = check-for($path ~ "/additionalProperties", $_);
+                        my $add = check-for($path ~ "/additionalProperties", $_, :%formats, :%add-formats);
                         push @checks, PropertiesCheck.new(:$path, :%props, :$add);
                     }
                     default {
@@ -755,7 +755,7 @@ class OpenAPI::Schema::Validate {
             when Positional {
                 push @checks, AllCheck.new(:path("$path/allOf"),
                                            native => False,
-                                           checks => .map({ check-for($path ~ '/allOf', $_); }));
+                                           checks => .map({ check-for($path ~ '/allOf', $_, :%formats, :%add-formats); }));
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
@@ -766,7 +766,7 @@ class OpenAPI::Schema::Validate {
         with %schema<anyOf> {
             when Positional {
                 push @checks, OrCheck.new(:path("$path/anyOf"),
-                                          checks => .map({ check-for($path ~ '/anyOf', $_); }));
+                                          checks => .map({ check-for($path ~ '/anyOf', $_, :%formats, :%add-formats); }));
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
@@ -777,7 +777,7 @@ class OpenAPI::Schema::Validate {
         with %schema<oneOf> {
             when Positional {
                 push @checks, OneCheck.new(:path("$path/oneOf"),
-                                           checks => .map({ check-for($path ~ '/oneOf', $_); }));
+                                           checks => .map({ check-for($path ~ '/oneOf', $_, :%formats, :%add-formats); }));
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
@@ -788,7 +788,7 @@ class OpenAPI::Schema::Validate {
         with %schema<not> {
             when Associative {
                 push @checks, NotCheck.new(:path("$path/not"),
-                                           check => check-for($path ~ '/not', $_));
+                                           check => check-for($path ~ '/not', $_, :%formats, :%add-formats));
             }
             default {
                 die X::OpenAPI::Schema::Validate::BadSchema.new:
