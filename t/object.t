@@ -74,6 +74,13 @@ throws-like
     throws-like $schema.validate({id => 1, color => 'red', text => 'lyrics'}),
     X::OpenAPI::Schema::Validate::Failed, message => /'text'/,
     'additionalProperties set to False rejects other attributes';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'object',
+        required => ['id', 'name'],
+        properties => { id => {}, name => {}, color => {} },
+        additionalProperties => False
+    });
+    ok $schema.validate({id => 1, name => 'One'}), 'additionalProperties checks a subset, not equality';
 }
 
 {
