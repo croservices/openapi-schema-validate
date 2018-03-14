@@ -808,10 +808,6 @@ class OpenAPI::Schema::Validate {
             with %formats{$_} {
                 push @checks, FormatCheck.new(:$path, checker => $_, format-name => %schema<format>)
             }
-            else {
-                die X::OpenAPI::Schema::Validate::BadSchema.new:
-                    :$path, :reason("Used unknown format: {%schema<format>}");
-            }
         }
 
         if %schema<readOnly> === True && %schema<writeOnly> === True {
