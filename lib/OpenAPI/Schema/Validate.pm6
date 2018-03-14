@@ -453,7 +453,7 @@ class OpenAPI::Schema::Validate {
                         %!props{$key}.check($value{$key});
                     }
                 } elsif $!add === False {
-                    if (set $value.keys) !=== (set %!props.keys) {
+                    if (set $value.keys) ⊈ (set %!props.keys) {
                         die X::OpenAPI::Schema::Validate::Failed.new:
                             path => $!path ~ '/properties',
                             :reason("Object has properties that are not covered by properties property: $((set $value.keys) (-) (set %!props.keys)).keys.join(', ')");
