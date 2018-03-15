@@ -78,4 +78,23 @@ use Test;
     ok $schema.validate('http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}'), 'Valid URI Template accepted';
 }
 
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'hello'
+    },
+    formats => {},
+    add-formats => { hello => /^'hello'$/ });
+    ok $schema.validate('hello'), 'add-formats format accepted valid input';
+    nok $schema.validate('hellou'), 'add-formats format rejected invalid input';
+    $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'int64'
+    },
+    formats => {},
+    add-formats => { int64 => /1/ });
+    nok $schema.validate(35), 'Default int64 check is overloaded';
+    nok $schema.validate(1), 'add-formats format used instead of default one';
+}
+
 done-testing;
