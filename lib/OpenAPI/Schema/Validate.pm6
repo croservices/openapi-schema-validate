@@ -25,9 +25,9 @@ class OpenAPI::Schema::Validate {
     has %.add-formats;
     my grammar ECMA262Regex {...}
     my %DEFAULT-FORMAT =
-        date-time => { DateTime::Parse::Grammar.parse($_, :rule('rfc3339-date')) },
-        date => { DateTime::Parse::Grammar.parse($_, :rule('date5')) },
-        time => { DateTime::Parse::Grammar.parse($_, :rule('time2')) },
+        date-time => { CATCH {default {False}}; DateTime::Parse.new($_, :rule('rfc3339-date')) },
+        date => { CATCH {default {False}}; DateTime::Parse.new($_, :rule('date5')) },
+        time => { CATCH {default {False}}; DateTime::Parse.new($_, :rule('time2')) },
         email => { True },
         idn-email => { True },
         hostname => { True },
