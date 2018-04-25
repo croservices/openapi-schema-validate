@@ -15,5 +15,5 @@
     "source-url" : "https://github.com/croservices/openapi-schema-validate.git",
     "tags" : [ "openapi", "oas", "swagger", "schema", "validation" ],
     "test-depends" : [ ],
-    "version" : "0.0.1"
+    "version" : "1.0"
 }
