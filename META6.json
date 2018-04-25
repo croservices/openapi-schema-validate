@@ -13,7 +13,7 @@
     },
     "resources" : [ ],
     "source-url" : "https://github.com/croservices/p6-openapi-schema-validate.git",
-    "tags" : [ ],
+    "tags" : [ "openapi", "oas", "swagger", "schema", "validation" ],
     "test-depends" : [ ],
     "version" : "0.0.1"
 }
