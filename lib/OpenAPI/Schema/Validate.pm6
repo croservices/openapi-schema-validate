@@ -155,7 +155,7 @@ class OpenAPI::Schema::Validate {
 
     my class IntegerCheck does Check {
         method check($value --> Nil) {
-            unless $value ~~ Int && $value.defined {
+            unless $value ~~ /^\d+$/ && $value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason('Not an integer');
             }
