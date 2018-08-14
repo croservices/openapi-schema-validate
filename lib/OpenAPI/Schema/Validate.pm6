@@ -110,6 +110,10 @@ class OpenAPI::Schema::Validate {
                     when X::OpenAPI::Schema::Validate::Failed {}
                 }
             }
+            unless $check {
+                die X::OpenAPI::Schema::Validate::Failed.new:
+                    :$!path, :reason('Does not satisfy exactly one check');
+            }
         }
     }
 

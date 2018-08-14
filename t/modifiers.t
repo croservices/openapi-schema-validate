@@ -36,6 +36,7 @@ use Test;
     });
     ok $schema.validate(1), 'oneOf accepted single-matched integer';
     nok $schema.validate('string'), 'oneOf rejected string matched twice';
+    nok $schema.validate({}), 'oneOf rejected object';
 }
 
 {
