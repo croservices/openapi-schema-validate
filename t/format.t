@@ -24,6 +24,7 @@ use Test;
         format => 'ipv6'
     });
     ok $schema.validate('1080:0:0:0:8:800:200C:417A'), 'Valid IPv6 accepted';
+    nok $schema.validate('1080:0:0:0:8:800'), 'Valid IPv6 accepted';
 }
 
 {
@@ -88,11 +89,23 @@ use Test;
         format => 'uri-reference'
     });
     ok $schema.validate('//example.org/scheme-relative/URI/with/absolute/path/to/resource.'), 'Valid URI Reference accepted';
+    nok $schema.validate('\\');
     $schema = OpenAPI::Schema::Validate.new(schema => {
         type => 'string',
         format => 'uri-template'
     });
     ok $schema.validate('http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}'), 'Valid URI Template accepted';
+    nok $schema.validate('\\');
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'string',
+        format => 'regex'
+    });
+    ok $schema.validate('foo$'), 'Valid regex accepted 1';
+    ok $schema.validate('&\w+(foo|bar)'), 'Valid regex accepted 2';
+    nok $schema.validate('\a'), 'Invalid regex rejected';
 }
 
 {

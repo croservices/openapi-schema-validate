@@ -32,16 +32,16 @@ class OpenAPI::Schema::Validate {
         idn-email => { True },
         hostname => { True },
         idn-hostname => { True },
-        ipv4 => { Cro::Uri::GenericParser.parse($_, :rule('IPv4address')) },
-        ipv6 => { Cro::Uri::GenericParser.parse($_, :rule('IPv6address')) },
+        ipv4 => { CATCH {default {False}}; Cro::Uri::GenericParser.parse($_, :rule('IPv4address')) },
+        ipv6 => { CATCH {default {False}}; Cro::Uri::GenericParser.parse($_, :rule('IPv6address')) },
         uri => { CATCH {default {False}}; Cro::Uri.parse($_) },
-        uri-reference => { Cro::Uri::GenericParser.parse($_, :rule<relative-ref>) },
+        uri-reference => { CATCH {default {False}}; Cro::Uri::GenericParser.parse($_, :rule<relative-ref>) },
         iri => { True },
         iri-reference => { True },
-        uri-template => { Cro::Uri::URI-Template.parse($_) },
+        uri-template => { CATCH {default {False}}; Cro::Uri::URI-Template.parse($_) },
         json-pointer => { CATCH {default {False}}; JSONPointer.parse($_) },
-        relative-json-pointer => { JSONPointerRelative.parse($_) },
-        regex => { so ECMA262Regex.parse($_) },
+        relative-json-pointer => { CATCH {default {False}}; JSONPointerRelative.parse($_) },
+        regex => { CATCH {default {False}}; ECMA262Regex.parse($_) },
         int32 => { -2147483648 <= $_ <= 2147483647 },
         int64 => { -9223372036854775808 <= $_ <= 9223372036854775807 },
         binary => { $_ ~~ Blob };
@@ -481,7 +481,7 @@ class OpenAPI::Schema::Validate {
     my class EnumCheck does Check {
         has $.enum;
         method check($value --> Nil) {
-            unless $value.defined && $value (elem) $!enum {
+            unless $value.defined && so $!enum.map(* eqv $value).any {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Value is outside of enumeration set by enum property");
             }
