@@ -24,7 +24,7 @@ use Test;
         format => 'ipv6'
     });
     ok $schema.validate('1080:0:0:0:8:800:200C:417A'), 'Valid IPv6 accepted';
-    nok $schema.validate('1080:0:0:0:8:800'), 'Valid IPv6 accepted';
+    nok $schema.validate('1080:0:0:0:8:800'), 'Invalid IPv6 rejected';
 }
 
 {
