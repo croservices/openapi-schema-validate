@@ -3,7 +3,7 @@
         "Jonathan Worthington <jonathan@edument.se>"
     ],
     "build-depends" : [ ],
-    "depends" : [ "Cro::Core", "JSON::Pointer", "DateTime::Parse" ],
+    "depends" : [ "Cro::Core", "JSON::Pointer", "DateTime::Parse", "ECMA262Regex" ],
     "description" : "Validate a value or data structure against an OpenAPI schema.",
     "license" : "Artistic-2.0",
     "name" : "OpenAPI::Schema::Validate",
@@ -15,5 +15,5 @@
     "source-url" : "https://github.com/croservices/openapi-schema-validate.git",
     "tags" : [ "openapi", "oas", "swagger", "schema", "validation" ],
     "test-depends" : [ ],
-    "version" : "1.0"
+    "version" : "1.0.5"
 }

@@ -2,6 +2,7 @@ use DateTime::Parse;
 use Cro::Uri;
 use JSON::Pointer;
 use JSON::Pointer::Relative;
+use ECMA262Regex;
 
 class X::OpenAPI::Schema::Validate::BadSchema is Exception {
     has $.path;
@@ -23,7 +24,6 @@ my subset StrictPositiveInt of Int where * > 0;
 class OpenAPI::Schema::Validate {
     has %.formats;
     has %.add-formats;
-    my grammar ECMA262Regex {...}
     my %DEFAULT-FORMAT =
         date-time => { CATCH {default {False}}; DateTime::Parse.new($_, :rule('rfc3339-date')) },
         date => { CATCH {default {False}}; DateTime::Parse.new($_, :rule('date5')) },
@@ -41,7 +41,7 @@ class OpenAPI::Schema::Validate {
         uri-template => { CATCH {default {False}}; Cro::Uri::URI-Template.parse($_) },
         json-pointer => { CATCH {default {False}}; JSONPointer.parse($_) },
         relative-json-pointer => { CATCH {default {False}}; JSONPointerRelative.parse($_) },
-        regex => { CATCH {default {False}}; ECMA262Regex.parse($_) },
+        regex => { ECMA262Regex.validate($_) },
         int32 => { -2147483648 <= $_ <= 2147483647 },
         int64 => { -9223372036854775808 <= $_ <= 9223372036854775807 },
         binary => { $_ ~~ Blob };
@@ -229,8 +229,7 @@ class OpenAPI::Schema::Validate {
         has Str $.pattern;
         has Regex $!rx;
         submethod TWEAK() {
-            use MONKEY-SEE-NO-EVAL;
-            $!rx = EVAL 'rx:P5/' ~ $!pattern ~ '/';
+            $!rx = ECMA262Regex.compile($!pattern);
         }
         method check($value --> Nil) {
             if $value ~~ Str && $value !~~ $!rx {
@@ -327,115 +326,6 @@ class OpenAPI::Schema::Validate {
                 die X::OpenAPI::Schema::Validate::Failed.new:
                     :$!path, :reason("Object does not have required property");
             }
-        }
-    }
-
-    my grammar ECMA262Regex {
-        token TOP {
-            <disjunction>
-        }
-        token disjunction {
-            <alternative>* % '|'
-        }
-        token alternative {
-            <term>*
-        }
-        token term {
-            <!before $>
-            [
-            | <assertion>
-            | <atom> <quantifier>?
-            ]
-        }
-        token assertion {
-            | '^'
-            | '$'
-            | '\\' <[bB]>
-            | '(?=' <disjunction> ')'
-            | '(?!' <disjunction> ')'
-        }
-        token quantifier {
-            <quantifier-prefix> '?'?
-        }
-        token quantifier-prefix {
-            | '+'
-            | '*'
-            | '?'
-            | '{' <decimal-digits> [ ',' <decimal-digits>? ]? '}'
-        }
-        token atom {
-            | <pattern-character>
-            | '.'
-            | '\\' <atom-escape>
-            | <character-class>
-            | '(' <disjunction> ')'
-            | '(?:' <disjunction> ')'
-        }
-        token pattern-character {
-            <-[^$\\.*+?()[\]{}|]>
-        }
-        token atom-escape {
-            | <decimal-digits>
-            | <character-escape>
-            | <character-class-escape>
-        }
-        token character-escape {
-            | <control-escape>
-            | 'c' <control-letter>
-            | <hex-escape-sequence>
-            | <unicode-escape-sequence>
-            | <identity-escape>
-        }
-        token control-escape {
-            <[fnrtv]>
-        }
-        token control-letter {
-            <[A..Za..z]>
-        }
-        token hex-escape-sequence {
-            'x' <[0..9A..Fa..f]>**2
-        }
-        token unicode-escape-sequence {
-            'u' <[0..9A..Fa..f]>**4
-        }
-        token identity-escape {
-            <-ident-[\c[ZWJ]\c[ZWNJ]]>
-        }
-        token decimal-digits {
-            <[0..9]>+
-        }
-        token character-class-escape {
-            <[dDsSwW]>
-        }
-        token character-class {
-            '[' '^'? <class-ranges> ']'
-        }
-        token class-ranges {
-            <non-empty-class-ranges>?
-        }
-        token non-empty-class-ranges {
-            | <class-atom> '-' <class-atom> <class-ranges>
-            | <class-atom-no-dash> <non-empty-class-ranges-no-dash>?
-            | <class-atom>
-        }
-        token non-empty-class-ranges-no-dash {
-            | <class-atom-no-dash> '-' <class-atom> <class-ranges>
-            | <class-atom-no-dash> <non-empty-class-ranges-no-dash>
-            | <class-atom>
-        }
-        token class-atom {
-            | '-'
-            | <class-atom-no-dash>
-        }
-        token class-atom-no-dash {
-            | <-[\\\]-]>
-            | \\ <class-escape>
-        }
-        token class-escape {
-            | <decimal-digits>
-            | 'b'
-            | <character-escape>
-            | <character-class-escape>
         }
     }
 
@@ -631,7 +521,7 @@ class OpenAPI::Schema::Validate {
 
         with %schema<pattern> {
             when Str {
-                if ECMA262Regex.parse($_) {
+                if ECMA262Regex.validate($_) {
                     push @checks, PatternCheck.new(:$path, :pattern($_));
                 }
                 else {
