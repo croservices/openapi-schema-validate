@@ -74,6 +74,22 @@ use Test;
         type => 'object',
         required => ['username'],
         properties => {
+            username => {
+                type => 'string',
+                nullable => True
+            }
+        }
+    });
+    ok $schema.validate({username => 'Zero'}), 'String accepted when nullable is True and property is required';
+    ok $schema.validate({username => Str}), 'Type object accepted when nullable is True and property is required';
+    nok $schema.validate({}), 'Missing property rejected when nullable is True and property is required';
+}
+
+{
+    my $schema = OpenAPI::Schema::Validate.new(schema => {
+        type => 'object',
+        required => ['username'],
+        properties => {
             username => { type => 'string' },
             lastTimeOnline => { readOnly => True, type => 'string' }
         }

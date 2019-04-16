@@ -324,7 +324,7 @@ class OpenAPI::Schema::Validate {
         method check($value --> Nil) {
             if $value ~~ Associative {
                 for @!prop -> $needle {
-                    if !$value{$needle}.defined {
+                    if $value{$needle}:!exists {
                         die X::OpenAPI::Schema::Validate::Failed.new:
                             :$!path,
                             :reason("Object does not have required property: \"$needle\"");
