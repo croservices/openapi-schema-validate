@@ -322,9 +322,14 @@ class OpenAPI::Schema::Validate {
     my class RequiredCheck does Check {
         has Str @.prop;
         method check($value --> Nil) {
-            if $value ~~ Associative && not [&&] $value{@!prop}.map(*.defined) {
-                die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason("Object does not have required property");
+            if $value ~~ Associative {
+                for @!prop -> $needle {
+                    if !$value{$needle}.defined {
+                        die X::OpenAPI::Schema::Validate::Failed.new:
+                            :$!path,
+                            :reason("Object does not have required property: \"$needle\"");
+                    }
+                }
             }
         }
     }
