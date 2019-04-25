@@ -133,14 +133,16 @@ class OpenAPI::Schema::Validate {
     my class NotCheck does Check {
         has Check $.check;
         method check($value --> Nil) {
-            $!check.check($value);
-            CATCH {
-                when X::OpenAPI::Schema::Validate::Failed {
-                    return;
+            {
+                $!check.check($value);
+                CATCH {
+                    when X::OpenAPI::Schema::Validate::Failed {
+                        return;
+                    }
                 }
             }
-            fail X::OpenAPI::Schema::Validate::Failed.new:
-                :$!path, :reason('Value passed check check');
+            die X::OpenAPI::Schema::Validate::Failed.new:
+                :$!path, :reason('Value passed not check');
         }
     }
 
