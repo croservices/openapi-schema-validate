@@ -103,20 +103,24 @@ class OpenAPI::Schema::Validate {
             my $succeed-num = 0;
             my @reasons;
             for @!checks.kv -> $i, $c {
-                $c.check($value);
+                {
+                    $c.check($value);
+                    CATCH {
+                        when X::OpenAPI::Schema::Validate::Failed {
+                            @reasons.push: "{.path}/{$i + 1}: {.reason}";
+                            next;
+                        }
+                        default {
+                            @reasons.push: "Other exception found: {$_.WHAT.^name}";
+                            next;
+                        }
+                    }
+                }
                 if $succeed-num {
-                    return fail X::OpenAPI::Schema::Validate::Failed.new:
+                    die X::OpenAPI::Schema::Validate::Failed.new:
                         :$!path, :reason("Value passed more than one check: $succeed-num and {$i + 1}");
                 } else {
                     $succeed-num = $i + 1;
-                }
-                CATCH {
-                    when X::OpenAPI::Schema::Validate::Failed {
-                        @reasons.push: "{.path}/{$i + 1}: {.reason}";
-                    }
-                    default {
-                        @reasons.push: "Other exception found: {$_.WHAT.^name}";
-                    }
                 }
             }
             if $succeed-num == 0 {
