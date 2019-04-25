@@ -102,17 +102,17 @@ class OpenAPI::Schema::Validate {
         method check($value --> Nil) {
             my $succeed-num = 0;
             my @reasons;
-            for @!checks.kv -> $i, $c {
+            CHECK_LOOP: for @!checks.kv -> $i, $c {
                 {
                     $c.check($value);
                     CATCH {
                         when X::OpenAPI::Schema::Validate::Failed {
                             @reasons.push: "{.path}/{$i + 1}: {.reason}";
-                            next;
+                            next CHECK_LOOP; # For some reason a plain `next` here acts like `.resume`
                         }
                         default {
                             @reasons.push: "Other exception found: {$_.WHAT.^name}";
-                            next;
+                            next CHECK_LOOP;
                         }
                     }
                 }
