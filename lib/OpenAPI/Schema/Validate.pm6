@@ -82,37 +82,50 @@ class OpenAPI::Schema::Validate {
     my class OrCheck does Check {
         has @.checks;
         method check($value --> Nil) {
+            my @reasons;
             for @!checks.kv -> $i, $c {
                 $c.check($value);
                 return;
                 CATCH {
-                    when X::OpenAPI::Schema::Validate::Failed {}
+                    when X::OpenAPI::Schema::Validate::Failed {
+                        @reasons.push: "{.path}/{$i + 1}: {.reason}";
+                    }
                 }
             }
             die X::OpenAPI::Schema::Validate::Failed.new:
-                :$!path, :reason('Does not satisfy any check');
+                :$!path, :reason("Does not satisfy any check:\n" ~ @reasons.join("\n"));
         }
     }
 
     my class OneCheck does Check {
         has @.checks;
         method check($value --> Nil) {
-            my $check = False;
-            for @!checks.kv -> $i, $c {
-                $c.check($value);
-                if $check {
-                    return fail X::OpenAPI::Schema::Validate::Failed.new:
-                        :$!path, :reason('Value passed more than one check');
-                } else {
-                    $check = True;
+            my $succeed-num = 0;
+            my @reasons;
+            CHECK_LOOP: for @!checks.kv -> $i, $c {
+                {
+                    $c.check($value);
+                    CATCH {
+                        when X::OpenAPI::Schema::Validate::Failed {
+                            @reasons.push: "{.path}/{$i + 1}: {.reason}";
+                            next CHECK_LOOP; # For some reason a plain `next` here acts like `.resume`
+                        }
+                        default {
+                            @reasons.push: "Other exception found: {$_.WHAT.^name}";
+                            next CHECK_LOOP;
+                        }
+                    }
                 }
-                CATCH {
-                    when X::OpenAPI::Schema::Validate::Failed {}
+                if $succeed-num {
+                    die X::OpenAPI::Schema::Validate::Failed.new:
+                        :$!path, :reason("Value passed more than one check: $succeed-num and {$i + 1}");
+                } else {
+                    $succeed-num = $i + 1;
                 }
             }
-            unless $check {
+            if $succeed-num == 0 {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Does not satisfy exactly one check');
+                    :$!path, :reason("Does not satisfy any check:\n" ~ @reasons.join("\n"));
             }
         }
     }
@@ -120,14 +133,16 @@ class OpenAPI::Schema::Validate {
     my class NotCheck does Check {
         has Check $.check;
         method check($value --> Nil) {
-            $!check.check($value);
-            CATCH {
-                when X::OpenAPI::Schema::Validate::Failed {
-                    return;
+            {
+                $!check.check($value);
+                CATCH {
+                    when X::OpenAPI::Schema::Validate::Failed {
+                        return;
+                    }
                 }
             }
-            fail X::OpenAPI::Schema::Validate::Failed.new:
-                :$!path, :reason('Value passed check check');
+            die X::OpenAPI::Schema::Validate::Failed.new:
+                :$!path, :reason('Value passed not check');
         }
     }
 
@@ -137,12 +152,12 @@ class OpenAPI::Schema::Validate {
             if $!is-blob {
                 unless $value ~~ Blob && $value.defined {
                     die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Not a binary string');
+                    :$!path, :reason('Not a binary string:' ~ $value.WHAT.^name);
                 }
             } else {
                 unless $value ~~ Str && $value.defined {
                     die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Not a string');
+                    :$!path, :reason('Not a string:' ~ $value.WHAT.^name);
                 }
             }
         }
@@ -152,7 +167,7 @@ class OpenAPI::Schema::Validate {
         method check($value --> Nil) {
             unless $value ~~ Real && $value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Not a number');
+                    :$!path, :reason('Not a number:' ~ $value.WHAT.^name);
             }
         }
     }
@@ -161,7 +176,7 @@ class OpenAPI::Schema::Validate {
         method check($value --> Nil) {
             unless $value ~~ Int && $value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Not an integer');
+                    :$!path, :reason('Not an integer:' ~ $value.WHAT.^name);
             }
         }
     }
@@ -170,7 +185,7 @@ class OpenAPI::Schema::Validate {
         method check($value --> Nil) {
             unless $value ~~ Bool && $value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Not a boolean');
+                    :$!path, :reason('Not a boolean:' ~ $value.WHAT.^name);
             }
         }
     }
@@ -179,7 +194,7 @@ class OpenAPI::Schema::Validate {
         method check($value --> Nil) {
             unless $value ~~ Positional && $value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Not an array');
+                    :$!path, :reason('Not an array:' ~ $value.WHAT.^name);
             }
         }
     }
@@ -188,7 +203,7 @@ class OpenAPI::Schema::Validate {
         method check($value --> Nil) {
             unless $value ~~ Associative && $value.defined {
                 die X::OpenAPI::Schema::Validate::Failed.new:
-                    :$!path, :reason('Not an object');
+                    :$!path, :reason('Not an object:' ~ $value.WHAT.^name);
             }
         }
     }
@@ -355,7 +370,7 @@ class OpenAPI::Schema::Validate {
                     if (set $value.keys) ⊈ (set %!props.keys) {
                         die X::OpenAPI::Schema::Validate::Failed.new:
                             path => $!path ~ '/properties',
-                            :reason("Object has properties that are not covered by properties property: $((set $value.keys) (-) (set %!props.keys)).keys.join(', ')");
+                            :reason("Object has properties that are not covered by properties property: " ~ $((set $value.keys) (-) (set %!props.keys)).keys.join(', '));
                     } else {
                         $value.keys.map({ %!props{$_}.check($value{$_}) });
                     }
