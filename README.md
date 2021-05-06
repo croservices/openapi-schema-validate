@@ -1,4 +1,4 @@
-# OpenAPI::Schema::Validate
+# OpenAPI::Schema::Validate ![Build Status](https://github.com/croservices/openapi-schema-validate/actions/workflows/ci.yml/badge.svg)
 
 Validates a value or data structure (of hashes and arrays) against an OpenAPI
 schema definition.
